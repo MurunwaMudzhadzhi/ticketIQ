@@ -1,0 +1,64 @@
+{
+  "folders": [
+    { "name": "Frontend (Next.js)", "path": "frontend" },
+    { "name": "Backend (FastAPI)",  "path": "backend" },
+    { "name": "Scripts",            "path": "scripts" }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "${workspaceFolder:Backend (FastAPI)}/.venv/bin/python",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": { "source.fixAll.eslint": true },
+    "typescript.preferences.importModuleSpecifier": "relative"
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.pylance",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "bradlc.vscode-tailwindcss",
+      "formulahendry.auto-rename-tag",
+      "ms-vscode.vscode-typescript-next"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "FastAPI Backend",
+        "type": "python",
+        "request": "launch",
+        "module": "uvicorn",
+        "args": ["app.main:app", "--reload", "--port", "8000"],
+        "cwd": "${workspaceFolder:Backend (FastAPI)}",
+        "env": { "PYTHONPATH": "${workspaceFolder:Backend (FastAPI)}" }
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Start Backend",
+        "type": "shell",
+        "command": "cd backend && uvicorn app.main:app --reload --port 8000",
+        "group": "build",
+        "presentation": { "panel": "new", "name": "Backend" }
+      },
+      {
+        "label": "Start Frontend",
+        "type": "shell",
+        "command": "cd frontend && npm run dev",
+        "group": "build",
+        "presentation": { "panel": "new", "name": "Frontend" }
+      },
+      {
+        "label": "Seed Database",
+        "type": "shell",
+        "command": "cd backend && python ../scripts/seed_data.py",
+        "group": "build",
+        "presentation": { "panel": "new", "name": "Seed" }
+      }
+    ]
+  }
+}
