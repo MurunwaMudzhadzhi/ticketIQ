@@ -35,6 +35,13 @@ def utcnow():
     ones) matters because it avoids a whole category of subtle bugs
     where times get compared or subtracted without anyone noticing
     they're actually in different timezones.
+
+    Every DateTime column below is declared with `timezone=True` to
+    match — on Postgres this stores the column as `TIMESTAMP WITH TIME
+    ZONE` instead of the default `TIMESTAMP WITHOUT TIME ZONE`. Without
+    that, Postgres (unlike SQLite, which never enforces this) rejects
+    the timezone-aware values this function produces with a "can't
+    subtract offset-naive and offset-aware datetimes" error.
     """
     return datetime.now(timezone.utc)
 
@@ -114,7 +121,7 @@ class Department(Base):
     description      = Column(Text, nullable=True)
     routed_agent_role = Column(String(50), nullable=True)                 # which UserRole normally handles this dept's tickets
     is_active        = Column(Boolean, default=True)
-    created_at       = Column(DateTime, default=utcnow)
+    created_at       = Column(DateTime(timezone=True), default=utcnow)
 
     # back_populates links this to the matching relationship on the other
     # side (User.department / Ticket.department), so SQLAlchemy keeps
@@ -157,9 +164,9 @@ class User(Base):
     avatar_url       = Column(String(500), nullable=True)
     is_active        = Column(Boolean, default=True)        # soft-disable flag — inactive users can't log in
     permissions      = Column(JSON, default=list)           # reserved for future fine-grained permission checks
-    last_login       = Column(DateTime, nullable=True)
-    created_at       = Column(DateTime, default=utcnow)
-    updated_at       = Column(DateTime, default=utcnow, onupdate=utcnow)  # auto-refreshes on every update
+    last_login       = Column(DateTime(timezone=True), nullable=True)
+    created_at       = Column(DateTime(timezone=True), default=utcnow)
+    updated_at       = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)  # auto-refreshes on every update
 
     department        = relationship("Department", back_populates="users")
     # Two separate relationships to Ticket, because a User can be linked
@@ -200,14 +207,14 @@ class Ticket(Base):
     assigned_agent_id = Column(String(36), ForeignKey("users.id"), nullable=True)
 
     ai_classification = Column(JSON, nullable=True)   # full record of how the AI classified/routed this ticket
-    sla_deadline      = Column(DateTime, nullable=True)  # when this ticket is due, based on its priority
+    sla_deadline      = Column(DateTime(timezone=True), nullable=True)  # when this ticket is due, based on its priority
     sla_breached      = Column(Boolean, default=False)   # set to True once sla_deadline has passed unresolved
     is_escalated      = Column(Boolean, default=False)
     resolution_note   = Column(Text, nullable=True)       # optional note an agent leaves when resolving
 
-    created_at  = Column(DateTime, default=utcnow)
-    updated_at  = Column(DateTime, default=utcnow, onupdate=utcnow)
-    resolved_at = Column(DateTime, nullable=True)  # set only when status becomes resolved/closed — used for resolution-time analytics
+    created_at  = Column(DateTime(timezone=True), default=utcnow)
+    updated_at  = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)  # set only when status becomes resolved/closed — used for resolution-time analytics
 
     submitter      = relationship("User", foreign_keys=[submitted_by_id], back_populates="submitted_tickets")
     department     = relationship("Department", back_populates="tickets")
@@ -236,7 +243,7 @@ class TicketComment(Base):
     content     = Column(Text, nullable=False)
     is_internal = Column(Boolean, default=False)
     is_ai       = Column(Boolean, default=False)
-    created_at  = Column(DateTime, default=utcnow)
+    created_at  = Column(DateTime(timezone=True), default=utcnow)
 
     ticket = relationship("Ticket", back_populates="comments")
     author = relationship("User", back_populates="comments")
@@ -259,7 +266,7 @@ class AuditLog(Base):
     user_id    = Column(String(36), ForeignKey("users.id"), nullable=True)
     action     = Column(String(100), nullable=False)   # e.g. "ticket_created", "status_changed"
     details    = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
 
     ticket = relationship("Ticket", back_populates="audit_logs")
 
@@ -279,8 +286,8 @@ class RefreshToken(Base):
     id         = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id    = Column(String(36), ForeignKey("users.id"), nullable=False)
     token      = Column(String(500), unique=True, nullable=False, index=True)
-    expires_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     revoked    = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
 
     user = relationship("User", back_populates="refresh_tokens")
