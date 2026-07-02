@@ -1,17 +1,10 @@
-databases:
-  - name: ticketiq-db
-    plan: free
-    region: oregon
-    databaseName: ticketiq
-    user: ticketiq
-
 services:
   - type: web
     name: ticketiq-backend
-    env: python
+    runtime: python
     region: oregon
     plan: free
-    rootDir: backend
+    rootDir: ticketIQ-main/backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -25,27 +18,10 @@ services:
         sync: false
       - key: APP_ENV
         value: production
-      # IMPORTANT: after your first deploy, Render will show you the
-      # live frontend URL (e.g. https://ticketiq-frontend-xxxx.onrender.com).
-      # Update this value in the Render dashboard to match it exactly
-      # (no trailing slash), otherwise the browser will block API calls
-      # from the frontend with a CORS error.
       - key: CORS_ORIGINS
-        value: https://your-frontend.onrender.com
+        value: https://your-frontend.vercel.app
 
-  - type: web
-    name: ticketiq-frontend
-    env: node
-    region: oregon
+databases:
+  - name: ticketiq-db
     plan: free
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
-    envVars:
-      # IMPORTANT: after your first deploy, Render will show you the
-      # live backend URL (e.g. https://ticketiq-backend-xxxx.onrender.com).
-      # Update this value in the Render dashboard to match it exactly,
-      # including the /api/v1 suffix, then trigger a manual redeploy of
-      # this service (env vars only take effect on Next.js at build time).
-      - key: NEXT_PUBLIC_API_URL
-        value: https://your-backend.onrender.com/api/v1
+    region: oregon
