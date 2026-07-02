@@ -19,7 +19,25 @@ services:
       - key: APP_ENV
         value: production
       - key: CORS_ORIGINS
-        value: https://your-frontend.vercel.app
+        fromService:
+          type: web
+          name: ticketiq-frontend
+          property: host
+
+  - type: web
+    name: ticketiq-frontend
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: ticketIQ-main/frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: ticketiq-backend
+          property: host
 
 databases:
   - name: ticketiq-db
