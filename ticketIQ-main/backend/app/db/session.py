@@ -23,6 +23,18 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from app.core.config import settings
 from app.models.models import Base
 
+# Render's managed Postgres (and most hosts) hand back a connection
+# string with the plain "postgresql://" or legacy "postgres://" scheme.
+# SQLAlchemy's async engine needs the driver named explicitly in the
+# scheme so it knows to use asyncpg instead of a sync driver — this
+# normalizes either form to "postgresql+asyncpg://" without requiring
+# the DATABASE_URL env var itself to be edited by hand.
+database_url = settings.DATABASE_URL
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 # SQLite: no pool_size/max_overflow (not supported by StaticPool)
 connect_args = {}
 engine_kwargs = {
@@ -30,7 +42,7 @@ engine_kwargs = {
     "pool_pre_ping": True,                        # check a connection is still alive before reusing it from the pool
 }
 
-if settings.DATABASE_URL.startswith("sqlite"):
+if database_url.startswith("sqlite"):
     # SQLite-specific setup: `check_same_thread=False` is required
     # because FastAPI's async event loop may touch the connection from
     # a different thread than the one that created it, and `StaticPool`
@@ -48,7 +60,7 @@ else:
     engine_kwargs["pool_size"] = 10
     engine_kwargs["max_overflow"] = 20
 
-engine = create_async_engine(settings.DATABASE_URL, **engine_kwargs)
+engine = create_async_engine(database_url, **engine_kwargs)
 
 # The session factory every part of the app uses to open a new database
 # session. `expire_on_commit=False` means objects fetched from the
